@@ -1,7 +1,8 @@
 
 
 SuperModel written in JavaScript. Basically a simple version of ActiveModel.
-See http://github.com/maccman/supermodel
+
+See [http://github.com/maccman/supermodel](http://github.com/maccman/supermodel)
 
 Examples:
 
