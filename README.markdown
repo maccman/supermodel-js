@@ -31,3 +31,12 @@ Examples:
         console.log(Asset.find(a.id))
       } catch(e) { }
     </script>
+    
+
+## Roadmap
+
+* Add observers
+* Add callbacks
+* Add validation
+* Add Sqlite (Web Storage) Backend
+* [Syncro](http://github.com/maccman/syncro) support via WebSockets
