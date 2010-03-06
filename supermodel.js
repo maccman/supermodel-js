@@ -75,6 +75,10 @@ SuperModel.extend({
   destroy: function(id){
     this.find(id).destroy();
   },
+  
+  replace: function(records){
+    this.records = records;
+  },
 
   dup: function(obj){
     // Prototype compatibility
@@ -165,3 +169,46 @@ SuperModel.include({
     return true;
   },
 });
+
+// Callbacks
+
+(function(){
+  var capitalize = function(str) {
+    return str.charAt(0).toUpperCase() + str.substring(1).toLowerCase();
+  }
+  
+  var callbacks = ["create", "save", "update", "destroy"];
+  
+  SuperModel.callbacks = {};
+  
+  SuperModel.defineCallback = function(name){
+    var types = ["before", "after"];
+    for(var i in types){
+      var callback_name = types[i] + name
+      this.callbacks[callback_name] = [];
+      this[types[i] + capitalize(name)] = function(cb){
+        this.callbacks[callback_name].push(cb);
+      }
+    }
+  };
+
+  for(var i in callbacks){
+    var callback = callbacks[i];
+    
+    SuperModel.defineCallback(callback);
+    
+    (function(callback){
+      SuperModel.fn[callback + "WithCallbacks"] = function(){
+        var beforeCallbacks = this.class.callbacks["before" + callback];
+        for(var i in beforeCallbacks) { beforeCallbacks[i](this) }
+
+        this[callback + "WithoutCallbacks"].apply(this, arguments);
+        
+        var afterCallbacks = this.class.callbacks["after" + callback];
+        for(var i in afterCallbacks) { afterCallbacks[i](this) }
+      };
+    }(callback))
+    
+    SuperModel.fn.aliasMethodChain(callback, "Callbacks");
+  }
+}());

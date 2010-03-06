@@ -28,7 +28,18 @@ var SuperClass = function(parent){
     for(var i in obj){
       result.fn[i] = obj[i];
     }
-  }
+  };
+  
+  result.aliasMethod = function(newName, oldName){
+    this[newName] = this[oldName];
+  };
+  result.fn.aliasMethod = result.aliasMethod;
+  
+  result.aliasMethodChain = function(method, name){
+    this.aliasMethod(method + "Without" + name, method);
+    this.aliasMethod(method, method + "With" + name);
+  };
+  result.fn.aliasMethodChain = result.aliasMethodChain;
 
   result.fn.class = result;
 
