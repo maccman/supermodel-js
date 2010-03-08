@@ -1,4 +1,4 @@
-var SuperClass = function(parent){
+var SuperClass = function(parent){  
   var result = function(){
     this.init.apply(this, arguments);
   };
@@ -7,18 +7,18 @@ var SuperClass = function(parent){
 
   if (parent){
     for(var i in parent){
-      result[i] = parent[i]
+      result[i] = SuperClass.clone(parent[i]);
     }
     for(var i in parent.prototype){
-      result.prototype[i] = parent.prototype[i];
+      result.prototype[i] = SuperClass.clone(parent.prototype[i]);
     }
-    result.super = parent;
-    result.prototype.super = parent.prototype;
+    result._super = parent;
+    result.prototype._super = parent.prototype;
   }
 
   result.fn = result.prototype;
 
-  result.extend   = function(obj){
+  result.extend = function(obj){
     for(var i in obj){
       result[i] = obj[i];
     }
@@ -41,7 +41,14 @@ var SuperClass = function(parent){
   };
   result.fn.aliasMethodChain = result.aliasMethodChain;
 
-  result.fn.class = result;
+  result.fn._class = result;
 
   return result;
+};
+
+SuperClass.clone = function(obj){
+  if (typeof obj == "function") return obj;
+  if (typeof obj != "object") return obj;
+  if (jQuery.isArray(obj)) return jQuery.extend([], obj);
+  return jQuery.extend({}, obj);
 };

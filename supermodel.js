@@ -1,13 +1,24 @@
 var SuperModel = new SuperClass();
 
 SuperModel.extend({
-  records:    [],
+  records:    {},
   attributes: [],
   idCount:    0,
+  isModel:    true,
+  
+  // records is an object, since we want
+  // to be able to use non-integer ids
+  recordsValues: function(){
+    var result = []
+    for (var key in this.records)
+      result.push(this.records[key])
+    return result;
+  },
   
   setup: function(name){
     var result = new SuperClass(SuperModel);
-    result.name = name;
+    // Can't use .name, so we use .className
+    result.className = name;
     return result;
   },
   
@@ -19,9 +30,9 @@ SuperModel.extend({
 
   findByAttribute: function(name, value){
     var result = [];
-    for(var record in this.records){
-      if(record[name] == value){
-        result.push(record.dup());
+    for(var key in this.records){
+      if(this.records[key][name] == value){
+        result.push(this.records[key].dup());
       }
     }
     return result;
@@ -33,39 +44,39 @@ SuperModel.extend({
   },
 
   all: function(){
-    return this.dup(this.records);
+    return this.dupArray(this.recordsValues());
   },
 
   first: function(){
-    var record = this.records.slice(0, 1)[0];
+    var record = this.recordsValues().slice(0, 1)[0];
     return(record && record.dup());
   },
 
   last: function(){
-    var record = this.records.slice(0, -1)[0];
+    var record = this.recordsValues().slice(0, -1)[0];
     return(record && record.dup());
   },
 
   count: function(){
-    return this.records.length;
+    return this.recordsValues().length;
   },
 
   deleteAll: function(){
-    for(var item in this.records){
-      delete this.records[item];
+    for(var key in this.records){
+      delete this.records[key];
     }
   },
 
   destroyAll: function(){
-    for(var item in this.records){
-      item.destroy();
+    for(var key in this.records){
+      this.records[key].destroy();
     }
   },
 
   update: function(id, atts){
     this.find(id).updateAttributes(atts);
   },
-
+  
   create: function(atts){
     var record = new this(atts);
     record.save();
@@ -77,16 +88,17 @@ SuperModel.extend({
   },
   
   replace: function(records){
-    this.records = records;
+    this.destroyAll();
+    var self = this;
+    jQuery.each(records, function(i, item){
+      self.create(item);
+    })
   },
 
-  dup: function(obj){
-    // Prototype compatibility
-    if(typeof Object.extend != "undefined"){
-      return Object.extend({}, obj)
-    } else {
-      return jQuery.extend(true, {}, obj);
-    }
+  dupArray: function(array){
+    return jQuery.each(array, function(i, item){
+      return(item && item.dup());
+    });
   }
 });  
   
@@ -125,13 +137,13 @@ SuperModel.include({
   },
     
   dup: function(){
-    return this.class.dup(this);
+    return jQuery.extend({}, this); 
   },
   
   attributes: function(){
     var result = {};
-    for(var i in this.class.attributes) {
-      var attr = this.class.attributes[i];
+    for(var i in this._class.attributes) {
+      var attr = this._class.attributes[i];
       result[attr] = this[attr];
     }
     result.id = this.id;
@@ -141,15 +153,16 @@ SuperModel.include({
   // Private
   
   generateID: function(){
-    return(this.class.idCount += 1);
+    return(this._class.idCount += 1);
   },
   
   rawDestroy: function(){
-    delete this.class.records[this.id];
+    delete this._class.records[this.id];
   },
   
   rawCreate: function(){
-    this.class.records[this.id] = this.dup();
+    if( !this.id ) return;
+    this._class.records[this.id] = this.dup();
   },
   
   create: function(){
@@ -160,7 +173,7 @@ SuperModel.include({
   },
   
   rawUpdate: function(){
-    var item = this.class.rawFind(this.id);
+    var item = this._class.rawFind(this.id);
     item.load(this.attributes());
   },
   
@@ -178,16 +191,14 @@ SuperModel.include({
   }
   
   var callbacks = ["create", "save", "update", "destroy"];
-  
-  SuperModel.callbacks = {};
-  
+    
   SuperModel.defineCallback = function(name){
     var types = ["before", "after"];
     for(var i in types){
       var callback_name = types[i] + name
-      this.callbacks[callback_name] = [];
+      this[callback_name] = [];
       this[types[i] + capitalize(name)] = function(cb){
-        this.callbacks[callback_name].push(cb);
+        this[callback_name].push(cb);
       }
     }
   };
@@ -199,12 +210,12 @@ SuperModel.include({
     
     (function(callback){
       SuperModel.fn[callback + "WithCallbacks"] = function(){
-        var beforeCallbacks = this.class.callbacks["before" + callback];
+        var beforeCallbacks = this._class["before" + callback];
         for(var i in beforeCallbacks) { beforeCallbacks[i](this) }
 
         this[callback + "WithoutCallbacks"].apply(this, arguments);
         
-        var afterCallbacks = this.class.callbacks["after" + callback];
+        var afterCallbacks = this._class["after" + callback];
         for(var i in afterCallbacks) { afterCallbacks[i](this) }
       };
     }(callback))
