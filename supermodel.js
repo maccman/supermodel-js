@@ -3,7 +3,6 @@ var SuperModel = new SuperClass();
 SuperModel.extend({
   records:    {},
   attributes: [],
-  idCount:    0,
   isModel:    true,
   
   // records is an object, since we want
@@ -29,13 +28,11 @@ SuperModel.extend({
   },
 
   findByAttribute: function(name, value){
-    var result = [];
     for(var key in this.records){
       if(this.records[key][name] == value){
-        result.push(this.records[key].dup());
+        return this.records[key].dup();
       }
     }
-    return result;
   },
 
   find: function(id){
@@ -48,13 +45,29 @@ SuperModel.extend({
   },
 
   first: function(){
-    var record = this.recordsValues().slice(0, 1)[0];
+    var record = this.recordsValues()[0];
     return(record && record.dup());
   },
 
   last: function(){
-    var record = this.recordsValues().slice(0, -1)[0];
+    var values = this.recordsValues()
+    var record = values[values.length - 1];
     return(record && record.dup());
+  },
+  
+  select: function(callback){
+    var result = [];
+    for(var key in this.records){
+      if(callback(this.records[key]))
+        result.push(this.records[key]);
+    }
+    return this.dupArray(result);
+  },
+  
+  each: function(callback){
+    for(var key in this.records) {
+      callback(this.records[key]);
+    }
   },
 
   count: function(){
@@ -153,7 +166,9 @@ SuperModel.include({
   // Private
   
   generateID: function(){
-    return(this._class.idCount += 1);
+    var last   = this._class.last();
+    var lastId = last ? last.id : 0;    
+    return(lastId += 1);
   },
   
   rawDestroy: function(){
@@ -223,3 +238,26 @@ SuperModel.include({
     SuperModel.fn.aliasMethodChain(callback, "Callbacks");
   }
 }());
+
+// Setters and Getters
+
+SuperModel.setters = function(obj){
+  for(var key in obj)
+    this.__defineSetter__(key, obj[key]);
+};
+SuperModel.fn.setters = SuperModel.setters;
+
+SuperModel.getters = function(obj){
+  for(var key in obj)
+    this.__defineGetter__(key, obj[key]);
+};
+SuperModel.fn.getters = SuperModel.getters;
+
+// Serialization
+
+SuperModel.serializeRecords = function(){
+  var result = {};
+  for(var key in this.records)
+    result[key] = this.records[key].attributes();
+  return result;
+};

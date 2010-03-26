@@ -19,15 +19,21 @@ var SuperClass = function(parent){
   result.fn = result.prototype;
 
   result.extend = function(obj){
+    var extended = obj.extended;
+    delete obj.extended;
     for(var i in obj){
       result[i] = obj[i];
     }
+    if (extended) extended(result)
   };
 
   result.include = function(obj){
+    var included = obj.included;
+    delete obj.included;
     for(var i in obj){
       result.fn[i] = obj[i];
     }
+    if (included) included(result)
   };
   
   result.aliasMethod = function(newName, oldName){
