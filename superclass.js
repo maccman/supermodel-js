@@ -20,7 +20,6 @@ var SuperClass = function(parent){
 
   result.extend = function(obj){
     var extended = obj.extended;
-    delete obj.extended;
     for(var i in obj){
       result[i] = obj[i];
     }
@@ -29,7 +28,6 @@ var SuperClass = function(parent){
 
   result.include = function(obj){
     var included = obj.included;
-    delete obj.included;
     for(var i in obj){
       result.fn[i] = obj[i];
     }
@@ -46,6 +44,14 @@ var SuperClass = function(parent){
     this.aliasMethod(method, method + "With" + name);
   };
   result.fn.aliasMethodChain = result.aliasMethodChain;
+  
+  result.proxy = function(func){
+    var thisObject = this;
+    return(function(){ 
+      return func.apply(thisObject, arguments); 
+    });
+  }
+  result.fn.proxy = result.proxy;
 
   result.fn._class = result;
 
