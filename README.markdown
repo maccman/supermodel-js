@@ -1,6 +1,5 @@
 
-
-SuperModel written in JavaScript. Basically a simple version of ActiveModel.
+SuperModel written in JavaScript; essentially a simple version of ActiveModel in JavaScript.
 
 See [http://github.com/maccman/supermodel](http://github.com/maccman/supermodel)
 
@@ -30,11 +29,13 @@ Examples:
       try {
         console.log(Asset.find(a.id))
       } catch(e) { }
+      
+      
+      // Automatically save data in local database
+      Asset.extend(SuperModel.Marshal)
     </script>
     
 
 ## Roadmap
 
-* Add validation
-* Add Sqlite (Web Storage) Backend
-* [Syncro](http://github.com/maccman/syncro) support via WebSockets
+* Add validation, at the moment it can be done by throwing errors in filters
