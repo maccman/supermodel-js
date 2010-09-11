@@ -1,5 +1,9 @@
+//= require <superclass>
+//= require <superevent>
+
 var SuperModel = new SuperClass();
 
+SuperModel.extend(SuperEvent);
 SuperModel.extend({
   records:    {},
   attributes: [],
@@ -108,12 +112,14 @@ SuperModel.extend({
     this.find(id).destroy();
   },
   
-  replace: function(records){
-    this.destroyAll();
-    var self = this;
-    jQuery.each(records, function(i, item){
-      self.create(item);
-    });
+  populate: function(values){
+    this.records = [];
+    for (var i=0, il = values.length; i < il; i++) {    
+      var record = new this(values[i])
+      record.newRecord = false;
+      this.records[record.id] = record;
+    }
+    this.trigger("populate");
   },
   
   fromArray: function(array){
@@ -127,8 +133,8 @@ SuperModel.extend({
     return jQuery.each(array, function(i, item){
       return(item && item.dup());
     });
-  }  
-});  
+  }
+});
   
 SuperModel.include({
   init: function(atts){
@@ -142,11 +148,10 @@ SuperModel.include({
   },
   
   save: function(){
+    this.trigger("beforeSave");
     this.isNew() ? this.create() : this.update();
-  },
-  
-  destroy: function(){
-    this.rawDestroy();
+    this.trigger("afterSave");
+    this.trigger("save");
   },
   
   load: function(attributes){
@@ -194,6 +199,10 @@ SuperModel.include({
   
   // Private
   
+  trigger: function(name){
+    this._class.trigger(name, this);
+  },
+  
   reloadChanges: function(){
     this.previousChanges    = (this.previousAttributes ? this.changes() : {});
     this.previousAttributes = this.attributes();
@@ -209,16 +218,26 @@ SuperModel.include({
     delete this._class.records[this.id];
   },
   
+  destroy: function(){
+    this.trigger("beforeDestroy");
+    this.rawDestroy();
+    this.trigger("afterDestroy");
+    this.trigger("destroy");
+  },
+  
   rawCreate: function(){
     if( !this.id ) return;
     this._class.records[this.id] = this.dup();
   },
   
   create: function(){
+    this.trigger("beforeCreate");
     if( !this.id ) this.id = this.generateID();
     this.newRecord = false;
     this.rawCreate();
     this.reloadChanges();
+    this.trigger("afterCreate");
+    this.trigger("create");
     return this.id;
   },
   
@@ -228,56 +247,14 @@ SuperModel.include({
   },
   
   update: function(){
+    this.trigger("beforeUpdate");
     this.rawUpdate();
     this.reloadChanges();
+    this.trigger("afterUpdate");
+    this.trigger("update");
     return true;
   }
 });
-
-// Callbacks
-
-(function(){
-  var capitalize = function(str) {
-    return str.charAt(0).toUpperCase() + str.substring(1).toLowerCase();
-  };
-  
-  var callbacks = ["create", "save", "update", "destroy"];
-    
-  SuperModel.defineCallback = function(name){
-    var types = ["before", "after"];
-    for(var i in types){
-      var callbackName   = "cb_" + types[i] + name;
-      var callbackMethod = types[i] + capitalize(name);
-      this[callbackName] = [];
-      
-      this.proxy(function(callbackMethod, callbackName){
-        this[callbackMethod] = function(cb){
-          this[callbackName].push(cb);
-        };
-      })(callbackMethod, callbackName);
-    }
-  };
-
-  for(var i in callbacks){
-    var callback = callbacks[i];
-    
-    SuperModel.defineCallback(callback);
-    
-    (function(callback){
-      SuperModel.fn[callback + "WithCallbacks"] = function(){
-        var beforeCallbacks = this._class["cb_before" + callback];
-        for(var i in beforeCallbacks) { beforeCallbacks[i](this) }
-
-        this[callback + "WithoutCallbacks"].apply(this, arguments);
-        
-        var afterCallbacks = this._class["cb_after" + callback];
-        for(var i in afterCallbacks) { afterCallbacks[i](this) }
-      };
-    }(callback))
-    
-    SuperModel.fn.aliasMethodChain(callback, "Callbacks");
-  }
-}());
 
 // Setters and Getters
 

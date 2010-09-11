@@ -6,6 +6,8 @@ See [http://github.com/maccman/supermodel](http://github.com/maccman/supermodel)
 Examples:
 
     <script src="javascripts/jquery.js"></script>
+    <script src="javascripts/superclass.js"></script>
+    <script src="javascripts/superevent.js"></script>
     <script src="javascripts/supermodel.js"></script>
 
     <script type="text/javascript" charset="utf-8">
@@ -32,7 +34,11 @@ Examples:
       
       
       // Automatically save data in local database
-      Asset.extend(SuperModel.Marshal)
+      Asset.extend(SuperModel.Marshal);
+      
+      Asset.bind("afterCreate", function(){
+        // after create callback
+      })
     </script>
     
 
